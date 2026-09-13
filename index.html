@@ -1246,7 +1246,7 @@ function waitForA(){
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
 
   for(const gp of pads){
-    if(gp && gp.buttons[0] && gp.buttons[0].pressed){
+    if(gp && gp.buttons && [...gp.buttons].some(b => b && b.pressed)){
       startGame();
       return;
     }
