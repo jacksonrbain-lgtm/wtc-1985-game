@@ -1,1 +1,1246 @@
+<!DOCTYPE html>  <html lang="en">        <head>        
+<meta charset="UTF-8">        
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">        
+<title>World Trade Center — May 15, 1985</title>        
+<style>        
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }        
+  html, body { width:100%; height:100%; overflow:hidden; background:#87ceeb; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }        
+  #canvas-wrap { position:fixed; inset:0; }        
+  canvas { display:block; width:100%; height:100%; }  .hud { position:fixed; z-index:10; color:#fff; pointer-events:none; user-select:none; }      #location-card {
+top:16px; left:16px;
+background:rgba(15,26,43,0.72);
+backdrop-filter: blur(6px);
+border-radius:18px;
+padding:14px 22px;
+}
+#location-card .name { font-size:26px; font-weight:800; letter-spacing:-0.3px; }
+#location-card .sub { font-size:15px; color:#b9c6d6; margin-top:2px; }
 
+#area-pill {
+top:22px; left:50%; transform:translateX(-50%);
+background:rgba(15,26,43,0.72);
+backdrop-filter: blur(6px);
+border-radius:16px;
+padding:12px 26px;
+font-size:22px; font-weight:800;
+}
+
+#datetime-card {
+top:16px; right:16px;
+background:rgba(15,26,43,0.72);
+backdrop-filter: blur(6px);
+border-radius:18px;
+padding:12px 20px;
+text-align:right;
+font-size:17px; font-weight:600;
+}
+#datetime-card .t { font-size:19px; }
+
+#controller-banner {
+bottom:88px; left:50%; transform:translateX(-50%);
+background:rgba(15,26,43,0.82);
+border-radius:16px;
+padding:12px 22px;
+font-size:16px; font-weight:600;
+white-space:nowrap;
+display:flex; align-items:center; gap:10px;
+transition: background 0.3s;
+}
+#controller-banner.connected { background:rgba(20,60,40,0.82); }
+#controller-banner.warn { background:rgba(90,30,30,0.85); }
+
+#interact-prompt {
+bottom:150px; left:50%; transform:translateX(-50%);
+background:rgba(15,26,43,0.88);
+border-radius:16px;
+padding:14px 26px;
+font-size:18px; font-weight:700;
+opacity:0; transition:opacity 0.15s;
+text-align:center;
+}
+#interact-prompt.show { opacity:1; }
+#interact-prompt .key {
+display:inline-block; background:#3ddc84; color:#0a1c12; border-radius:50%;
+width:26px; height:26px; line-height:26px; text-align:center; font-weight:900; margin-right:8px;
+}
+
+#fade { position:fixed; inset:0; background:#000; opacity:0; pointer-events:none; z-index:20; transition:opacity 0.35s; }
+#fade.on { opacity:1; }
+
+#stick-hint {
+bottom:16px; left:50%; transform:translateX(-50%);
+font-size:13px; color:#dce7f2; opacity:0.85;
+background:rgba(15,26,43,0.55); border-radius:12px; padding:8px 18px;
+}
+
+#boot {
+position:fixed; inset:0; z-index:30; background:#0b1220; color:#fff;
+display:flex; align-items:center; justify-content:center; flex-direction:column; gap:18px;
+text-align:center; padding:32px;
+}
+#boot h1 { font-size:28px; font-weight:800; }
+#boot p { color:#aebccb; max-width:520px; line-height:1.5; font-size:15px; }
+#boot .pad { font-size:44px; }
+#boot button {
+margin-top:8px; background:#3ddc84; color:#06210f; border:none; border-radius:14px;
+padding:14px 28px; font-size:16px; font-weight:800; cursor:pointer;
+}
+
+/* Touch fallback controls */
+.touch-zone {
+position:fixed; bottom:0; top:0; width:50%; z-index:8;
+touch-action:none;
+}
+#touch-zone-left { left:0; }
+#touch-zone-right { right:0; }
+
+.joy-base {
+position:fixed; z-index:9; width:120px; height:120px; border-radius:50%;
+background:rgba(255,255,255,0.12); border:2px solid rgba(255,255,255,0.35);
+display:none; touch-action:none; pointer-events:none;
+}
+.joy-base.active { display:block; }
+.joy-knob {
+position:absolute; left:50%; top:50%; width:52px; height:52px; border-radius:50%;
+background:rgba(255,255,255,0.55); transform:translate(-50%,-50%);
+}
+
+.touch-btn {
+position:fixed; z-index:9; width:66px; height:66px; border-radius:50%;
+border:2px solid rgba(255,255,255,0.5); background:rgba(15,26,43,0.55);
+color:#fff; font-size:22px; font-weight:800; touch-action:none;
+}
+#btn-jump { right:24px; bottom:150px; }
+#btn-interact { right:100px; bottom:90px; }
+</style>
+
+</head>        
+<body>  <div id="boot">        
+  <div class="pad">🎮</div>        
+  <h1>World Trade Center Plaza — 1985</h1>        
+  <p>Left Stick: Move &nbsp;•&nbsp; Right Stick: Look/Turn &nbsp;•&nbsp; A: Jump &nbsp;•&nbsp; B: Interact<br><br>        
+  Works with an Xbox controller, Backbone, or any Bluetooth/MFi gamepad. If your controller isn't detected, on-screen touch joysticks will appear automatically as a backup.<br><br>        
+  Connect your controller and press any button on it, then tap Start.</p>        
+  <button id="startBtn">Enter the Plaza</button>        
+</div>  <div id="canvas-wrap"><canvas id="c"></canvas></div>  <div class="hud" id="location-card">        
+  <div class="name">World Trade Center</div>        
+  <div class="sub">New York City</div>        
+</div>  <div class="hud" id="area-pill">WTC Plaza</div>  <div class="hud" id="datetime-card">        
+  <div class="t">11:30 AM ☀</div>        
+  <div class="d">May 15, 1985</div>        
+</div>  <div class="hud" id="controller-banner">🎮 <span id="banner-text">Searching for controller…</span></div>  <div class="hud" id="interact-prompt"><span class="key">B</span><span id="interact-text">Interact</span></div>  <div class="hud" id="stick-hint">Left Stick: Forward/Back &amp; Turn • Right Stick: Look • A Jump • B Interact</div>  <div id="fade"></div>  <!-- Touch fallback controls: work alongside a Backbone/gamepad automatically.        
+     If a real controller sends input, its values simply take over each frame. -->  <div id="touch-zone-left" class="touch-zone"></div>        
+<div id="touch-zone-right" class="touch-zone"></div>        
+<div id="joy-left" class="joy-base"><div class="joy-knob"></div></div>        
+<div id="joy-right" class="joy-base"><div class="joy-knob"></div></div>        
+<button id="btn-jump" class="touch-btn">A</button>        
+<button id="btn-interact" class="touch-btn">B</button>  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>  <script>        
+(function(){        
+"use strict";        // ---------------------------------------------------------------------------
+// BASIC SETUP
+// ---------------------------------------------------------------------------
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x8fcdf2);
+scene.fog = new THREE.Fog(0x8fcdf2, 220, 900);
+
+const camera = new THREE.PerspectiveCamera(62, window.innerWidth/window.innerHeight, 0.1, 2000);
+
+function onResize(){
+renderer.setSize(window.innerWidth, window.innerHeight);
+camera.aspect = window.innerWidth/window.innerHeight;
+camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', onResize);
+onResize();
+
+// ---------------------------------------------------------------------------
+// LIGHTING
+// ---------------------------------------------------------------------------
+const hemi = new THREE.HemisphereLight(0xbfe3ff, 0x556b55, 0.65);
+scene.add(hemi);
+
+const sun = new THREE.DirectionalLight(0xfff3d6, 1.05);
+sun.position.set(120, 260, 90); // late-morning sun, ~11:30am
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -260; sun.shadow.camera.right = 260;
+sun.shadow.camera.top = 260; sun.shadow.camera.bottom = -260;
+sun.shadow.camera.far = 700;
+sun.shadow.bias = -0.0004;
+scene.add(sun);
+scene.add(sun.target);
+
+const indoorAmbient = new THREE.AmbientLight(0xffffff, 0.55);
+indoorAmbient.visible = false;
+scene.add(indoorAmbient);
+
+const indoorLamp = new THREE.PointLight(0xfff2d6, 0.9, 140);
+indoorLamp.visible = false;
+scene.add(indoorLamp);
+
+// ---------------------------------------------------------------------------
+// TEXTURES (procedural canvas textures)
+// ---------------------------------------------------------------------------
+function makeCanvas(w,h){ const c=document.createElement('canvas'); c.width=w; c.height=h; return c; }
+
+function facadeTexture(){
+const c = makeCanvas(128,256);
+const ctx = c.getContext('2d');
+ctx.fillStyle = '#B9C3CC'; ctx.fillRect(0,0,128,256);
+// narrow vertical aluminum mullions - signature WTC facade, flat & bright (blocky look)
+ctx.fillStyle = '#EDF1F4';
+const step = 12;
+for(let x=0;x<128;x+=step){ ctx.fillRect(x,0,5,256); }
+// flat blue window slits, no gradients
+ctx.fillStyle = '#274A66';
+for(let y=6;y<256;y+=28){
+for(let x=5;x<128;x+=step){ ctx.fillRect(x+4,y,5,18); }
+}
+// floor spandrel bands
+ctx.fillStyle = '#8C99A3';
+for(let y=0;y<256;y+=28){ ctx.fillRect(0,y,128,3); }
+const tex = new THREE.CanvasTexture(c);
+tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+tex.anisotropy = 4;
+return tex;
+}
+
+function podiumTexture(){
+const c = makeCanvas(128,128);
+const ctx = c.getContext('2d');
+ctx.fillStyle = '#7d8891'; ctx.fillRect(0,0,128,128);
+ctx.fillStyle = '#3a4750';
+for(let y=0;y<128;y+=32){ for(let x=0;x<128;x+=32){ ctx.fillRect(x+3,y+3,26,26); } }
+const tex = new THREE.CanvasTexture(c);
+tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+return tex;
+}
+
+function plazaTexture(){
+const c = makeCanvas(256,256);
+const ctx = c.getContext('2d');
+ctx.fillStyle = '#D8CBA8'; ctx.fillRect(0,0,256,256);
+ctx.strokeStyle = 'rgba(110,98,72,0.55)'; ctx.lineWidth = 4;
+for(let i=0;i<=256;i+=32){
+ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,256); ctx.stroke();
+ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(256,i); ctx.stroke();
+}
+const tex = new THREE.CanvasTexture(c);
+tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+return tex;
+}
+
+function roadTexture(){
+const c = makeCanvas(64,256);
+const ctx = c.getContext('2d');
+ctx.fillStyle = '#333537'; ctx.fillRect(0,0,64,256);
+ctx.fillStyle = '#e7c94a';
+for(let y=0;y<256;y+=40){ ctx.fillRect(29,y,6,22); }
+const tex = new THREE.CanvasTexture(c);
+tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+return tex;
+}
+
+function sidewalkTexture(){
+const c = makeCanvas(128,128);
+const ctx = c.getContext('2d');
+ctx.fillStyle = '#aeb0ac'; ctx.fillRect(0,0,128,128);
+ctx.strokeStyle = 'rgba(90,90,86,0.6)'; ctx.lineWidth=3;
+for(let i=0;i<=128;i+=32){ ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,128); ctx.stroke(); }
+const tex = new THREE.CanvasTexture(c);
+tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+return tex;
+}
+
+function marbleTexture(){
+const c = makeCanvas(256,256);
+const ctx = c.getContext('2d');
+ctx.fillStyle = '#e7ded0'; ctx.fillRect(0,0,256,256);
+ctx.strokeStyle = 'rgba(150,130,100,0.25)';
+for(let i=0;i<40;i++){
+ctx.beginPath();
+ctx.moveTo(Math.random()*256,0);
+ctx.bezierCurveTo(Math.random()*256,Math.random()*256,Math.random()*256,Math.random()*256,Math.random()*256,256);
+ctx.stroke();
+}
+const tex = new THREE.CanvasTexture(c);
+tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+return tex;
+}
+
+function ceilingTileTexture(){
+const c = makeCanvas(64,64);
+const ctx = c.getContext('2d');
+ctx.fillStyle = '#e9e9e4'; ctx.fillRect(0,0,64,64);
+ctx.strokeStyle = '#c3c3bd'; ctx.lineWidth=2; ctx.strokeRect(1,1,62,62);
+const tex = new THREE.CanvasTexture(c);
+tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+return tex;
+}
+
+function carpetTexture(hex){
+const c = makeCanvas(32,32);
+const ctx = c.getContext('2d');
+ctx.fillStyle = hex; ctx.fillRect(0,0,32,32);
+const tex = new THREE.CanvasTexture(c);
+tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+return tex;
+}
+
+const TX_FACADE = facadeTexture();
+const TX_PODIUM = podiumTexture();
+const TX_PLAZA = plazaTexture();
+const TX_ROAD = roadTexture();
+const TX_SIDEWALK = sidewalkTexture();
+const TX_MARBLE = marbleTexture();
+const TX_CEILING = ceilingTileTexture();
+
+// ---------------------------------------------------------------------------
+// GROUPS (one per "scene" the player can be in)
+// ---------------------------------------------------------------------------
+const groups = {
+outdoor: new THREE.Group(),
+lobbyNorth: new THREE.Group(),
+lobbySouth: new THREE.Group(),
+officeFloor: new THREE.Group(),
+wtow: new THREE.Group(),
+concourse: new THREE.Group(),
+path: new THREE.Group(),
+vista: new THREE.Group(),
+generic: new THREE.Group(),
+};
+Object.values(groups).forEach(g => { g.visible = false; scene.add(g); });
+
+// ---------------------------------------------------------------------------
+// LABEL SPRITES
+// ---------------------------------------------------------------------------
+function makeLabel(text, opts){
+opts = opts || {};
+const pad = 24;
+const fontSize = opts.fontSize || 42;
+const c = document.createElement('canvas');
+const ctx = c.getContext('2d');
+ctx.font = 800 ${fontSize}px -apple-system, Arial;
+const w = Math.ceil(ctx.measureText(text).width) + pad2;
+const h = fontSize + pad1.4;
+c.width = w; c.height = h;
+ctx.font = 800 ${fontSize}px -apple-system, Arial;
+ctx.fillStyle = 'rgba(15,26,43,0.78)';
+roundRect(ctx,0,0,w,h,18); ctx.fill();
+ctx.fillStyle = '#ffffff';
+ctx.textBaseline = 'middle';
+ctx.fillText(text, pad, h/2+2);
+const tex = new THREE.CanvasTexture(c);
+const mat = new THREE.SpriteMaterial({ map:tex, depthTest:false });
+const spr = new THREE.Sprite(mat);
+const scale = (opts.scale || 0.045);
+spr.scale.set(wscale, hscale, 1);
+spr.renderOrder = 999;
+return spr;
+}
+function makeDynamicLabel(initialText, opts){
+opts = opts || {};
+const fontSize = opts.fontSize || 34;
+const w = opts.width || 560, h = opts.height || 90;
+const c = document.createElement('canvas'); c.width=w; c.height=h;
+const ctx = c.getContext('2d');
+function redraw(text){
+ctx.clearRect(0,0,w,h);
+ctx.font = 800 ${fontSize}px -apple-system, Arial;
+ctx.fillStyle = 'rgba(15,26,43,0.82)';
+roundRect(ctx,0,0,w,h,18); ctx.fill();
+ctx.fillStyle = '#ffffff';
+ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText(text, w/2, h/2+2);
+}
+redraw(initialText);
+const tex = new THREE.CanvasTexture(c);
+const mat = new THREE.SpriteMaterial({ map:tex, depthTest:false });
+const spr = new THREE.Sprite(mat);
+const scale = (opts.scale || 0.045);
+spr.scale.set(wscale, hscale, 1);
+spr.renderOrder = 999;
+spr.userData.setText = (t)=>{ redraw(t); tex.needsUpdate = true; };
+return spr;
+}
+
+function roundRect(ctx,x,y,w,h,r){
+ctx.beginPath();
+ctx.moveTo(x+r,y);
+ctx.arcTo(x+w,y,x+w,y+h,r);
+ctx.arcTo(x+w,y+h,x,y+h,r);
+ctx.arcTo(x,y+h,x,y,r);
+ctx.arcTo(x,y,x+w,y,r);
+ctx.closePath();
+}
+
+// ---------------------------------------------------------------------------
+// ROBLOX-STYLE BLOCKY CHARACTER RIG (head, torso, 2 arms, 2 legs)
+// Shared by the player and every pedestrian for a consistent avatar look.
+// ---------------------------------------------------------------------------
+function buildRobloxRig(colors){
+colors = colors || {};
+const headColor = colors.head !== undefined ? colors.head : 0xF5CD8E;
+const torsoColor = colors.torso !== undefined ? colors.torso : 0x2A62B5;
+const armColor  = colors.arm   !== undefined ? colors.arm   : headColor;
+const legColor  = colors.leg   !== undefined ? colors.leg   : 0x1D8033;
+
+const matHead  = new THREE.MeshStandardMaterial({ color:headColor,  roughness:0.9 });
+const matTorso = new THREE.MeshStandardMaterial({ color:torsoColor, roughness:0.9 });
+const matArm   = new THREE.MeshStandardMaterial({ color:armColor,   roughness:0.9 });
+const matLeg   = new THREE.MeshStandardMaterial({ color:legColor,   roughness:0.9 });
+
+const rig = new THREE.Group();
+
+const torso = new THREE.Mesh(new THREE.BoxGeometry(0.9,1.0,0.5), matTorso);
+torso.position.set(0,1.4,0);
+
+const head = new THREE.Mesh(new THREE.BoxGeometry(0.58,0.58,0.58), matHead);
+head.position.set(0,2.18,0);
+
+const legGeo = new THREE.BoxGeometry(0.38,0.9,0.42);
+const leftLegPivot = new THREE.Group(); leftLegPivot.position.set(-0.24,0.9,0);
+const leftLeg = new THREE.Mesh(legGeo, matLeg); leftLeg.position.set(0,-0.45,0); leftLegPivot.add(leftLeg);
+const rightLegPivot = new THREE.Group(); rightLegPivot.position.set(0.24,0.9,0);
+const rightLeg = new THREE.Mesh(legGeo, matLeg); rightLeg.position.set(0,-0.45,0); rightLegPivot.add(rightLeg);
+
+const armGeo = new THREE.BoxGeometry(0.36,1.0,0.4);
+const leftArmPivot = new THREE.Group(); leftArmPivot.position.set(-0.64,1.9,0);
+const leftArm = new THREE.Mesh(armGeo, matArm); leftArm.position.set(0,-0.5,0); leftArmPivot.add(leftArm);
+const rightArmPivot = new THREE.Group(); rightArmPivot.position.set(0.64,1.9,0);
+const rightArm = new THREE.Mesh(armGeo, matArm); rightArm.position.set(0,-0.5,0); rightArmPivot.add(rightArm);
+
+rig.add(leftLegPivot, rightLegPivot, torso, leftArmPivot, rightArmPivot, head);
+rig.traverse(o=>{ if(o.isMesh){ o.castShadow = true; o.receiveShadow = true; } });
+rig.userData.limbs = { leftLegPivot, rightLegPivot, leftArmPivot, rightArmPivot };
+return rig;
+}
+
+// ---------------------------------------------------------------------------
+// OUTDOOR WORLD
+// ---------------------------------------------------------------------------
+(function buildOutdoor(){
+const g = groups.outdoor;
+
+// Ground / plaza
+const groundTex = TX_PLAZA.clone(); groundTex.needsUpdate = true; groundTex.repeat.set(30,30);
+const ground = new THREE.Mesh(
+new THREE.PlaneGeometry(1000,1000),
+new THREE.MeshStandardMaterial({ map:groundTex, roughness:0.95 })
+);
+ground.rotation.x = -Math.PI/2;
+ground.receiveShadow = true;
+g.add(ground);
+
+// Streets (a cross of roads around the plaza block)
+function road(x,z,w,l,rotY){
+const tex = TX_ROAD.clone(); tex.needsUpdate = true; tex.repeat.set(w/8, l/16);
+const m = new THREE.Mesh(new THREE.PlaneGeometry(w,l), new THREE.MeshStandardMaterial({ map:tex, roughness:1 }));
+m.rotation.x = -Math.PI/2; m.rotation.z = rotY||0;
+m.position.set(x,0.02,z);
+m.receiveShadow = true;
+g.add(m);
+}
+road(0,-260,26,420,0);      // Church St (north-south)
+road(0,260,26,420,0);
+road(-220,0,26,420,Math.PI/2); // Vesey/Liberty (east-west), offset from plaza
+road(220,0,26,420,Math.PI/2);
+
+// Sidewalks bordering plaza block
+function sidewalk(x,z,w,l){
+const tex = TX_SIDEWALK.clone(); tex.needsUpdate = true; tex.repeat.set(w/8,l/8);
+const m = new THREE.Mesh(new THREE.PlaneGeometry(w,l), new THREE.MeshStandardMaterial({ map:tex, roughness:1 }));
+m.rotation.x = -Math.PI/2; m.position.set(x,0.03,z); m.receiveShadow = true;
+g.add(m);
+}
+sidewalk(0,-140,300,20);
+sidewalk(0,140,300,20);
+sidewalk(-140,0,20,300);
+sidewalk(140,0,20,300);
+
+// ---- helper: box building with facade texture ----
+function towerFace(w,h,d,texRepeatX,texRepeatY){
+const tex = TX_FACADE.clone(); tex.needsUpdate = true;
+tex.repeat.set(texRepeatX, texRepeatY);
+return new THREE.MeshStandardMaterial({ map:tex, roughness:0.95, metalness:0 });
+}
+
+function buildTwinTower(x,z,label,withAntenna){
+const tg = new THREE.Group();
+const w=42, d=42, h=210;
+const mat = towerFace(w,h,d, w/4, h/4);
+const body = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
+body.position.y = h/2;
+body.castShadow = true; body.receiveShadow = true;
+tg.add(body);
+
+// flat roof cap / mechanical rooftop structure        
+const cap = new THREE.Mesh(new THREE.BoxGeometry(w*0.5,6,d*0.5), new THREE.MeshStandardMaterial({color:0x555b60}));        
+cap.position.set(0,h+3,0); cap.castShadow = true;        
+tg.add(cap);        
+    
+if(withAntenna){        
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.6,0.9,55,10), new THREE.MeshStandardMaterial({color:0x888888}));        
+  mast.position.set(0,h+6+27,0);        
+  tg.add(mast);        
+}        
+    
+const lbl = makeLabel(label);        
+lbl.position.set(0,h+18,0);        
+tg.add(lbl);        
+    
+tg.position.set(x,0,z);        
+g.add(tg);        
+return tg;
+
+}
+
+const northTower = buildTwinTower(-34,-95,'1 WTC — North Tower', true);
+const southTower = buildTwinTower(34,-95,'2 WTC — South Tower', false);
+
+// Podium (low-rise base connecting the towers, 6-7 stories)
+function podiumBlock(x,z,w,d,h,label,opts){
+opts = opts || {};
+const mat = new THREE.MeshStandardMaterial({ map:(()=>{const t=TX_PODIUM.clone(); t.needsUpdate=true; t.repeat.set(w/6,h/6); return t;})(), roughness:0.95, metalness:0 });
+const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
+m.position.set(x,h/2,z);
+m.castShadow = true; m.receiveShadow = true;
+g.add(m);
+if(label){ const lbl = makeLabel(label,{fontSize:30}); lbl.position.set(x,h+5,z); g.add(lbl); }
+if(opts.entrance){
+const doorZ = z + d/2 + 3;
+addZone('outdoor', x, doorZ, 7, 'Enter '+label, ()=>enterGeneric(label, opts.color!==undefined?opts.color:0x8895a0, x, doorZ + 6));
+}
+return m;
+}
+podiumBlock(0,-95,150,60,24,null); // connective podium behind towers
+const vistaHotel = podiumBlock(70,-30,34,34,32,'Vista Hotel');
+const wtc4 = podiumBlock(-70,-30,34,34,26,'4 WTC', { entrance:true, color:0x3B6FA5 });
+const wtc5 = podiumBlock(-95,20,30,30,22,'5 WTC', { entrance:true, color:0x4A8F5C });
+const wtc6 = podiumBlock(95,20,30,30,20,'6 WTC — Customs House', { entrance:true, color:0x9C6B3F });
+
+// Plaza fountain
+(function fountain(){
+const fg = new THREE.Group();
+const basin = new THREE.Mesh(new THREE.CylinderGeometry(11,11.6,1.4,32), new THREE.MeshStandardMaterial({color:0x9c9385, roughness:0.9}));
+basin.position.y = 0.7; basin.castShadow=true; basin.receiveShadow=true;
+fg.add(basin);
+const water = new THREE.Mesh(new THREE.CylinderGeometry(10,10,0.3,32), new THREE.MeshStandardMaterial({color:0x2f7fb8, metalness:0.3, roughness:0.15}));
+water.position.y = 1.5;
+water.name = 'fountainWater';
+fg.add(water);
+const ring = new THREE.Mesh(new THREE.TorusGeometry(4,0.4,8,24), new THREE.MeshStandardMaterial({color:0xc7c2b6}));
+ring.rotation.x = Math.PI/2; ring.position.y = 1.6;
+fg.add(ring);
+const jet = new THREE.Mesh(new THREE.ConeGeometry(0.6,3,8), new THREE.MeshStandardMaterial({color:0xdff3ff, transparent:true, opacity:0.7}));
+jet.position.y = 3.2; jet.name = 'fountainJet';
+fg.add(jet);
+fg.position.set(0,0,10);
+g.add(fg);
+})();
+
+// Sunken plaza steps ring (iconic WTC plaza design)
+const stepsRing = new THREE.Mesh(new THREE.RingGeometry(16,30,48), new THREE.MeshStandardMaterial({color:0xbdb2a0, side:THREE.DoubleSide}));
+stepsRing.rotation.x = -Math.PI/2; stepsRing.position.set(0,0.05,10);
+g.add(stepsRing);
+
+// Trees around plaza (planters, per Yamasaki's original plaza design)
+function tree(x,z){
+const tg = new THREE.Group();
+const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.5,3,8), new THREE.MeshStandardMaterial({color:0x6b4a30}));
+trunk.position.y=1.5; trunk.castShadow=true;
+const canopy = new THREE.Mesh(new THREE.ConeGeometry(2.4,4.5,8), new THREE.MeshStandardMaterial({color:0x3f7d3a}));
+canopy.position.y=4.6; canopy.castShadow=true;
+const planter = new THREE.Mesh(new THREE.CylinderGeometry(1.3,1.3,0.6,10), new THREE.MeshStandardMaterial({color:0x8a8478}));
+planter.position.y=0.3;
+tg.add(trunk,canopy,planter);
+tg.position.set(x,0,z);
+g.add(tg);
+}
+const treePositions = [
+[-20,26],[-12,28],[-4,26],[4,26],[12,28],[20,26],
+[-20,-6],[20,-6],[-28,10],[28,10],
+[-50,60],[50,60],[-60,-60],[60,-60],[0,70],[-70,0],[70,0]
+];
+treePositions.forEach(p=>tree(p[0],p[1]));
+
+// Streetlights
+function streetlight(x,z){
+const lg = new THREE.Group();
+const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.22,7,8), new THREE.MeshStandardMaterial({color:0x2c2f33}));
+pole.position.y=3.5; pole.castShadow=true;
+const arm = new THREE.Mesh(new THREE.BoxGeometry(1.6,0.15,0.15), new THREE.MeshStandardMaterial({color:0x2c2f33}));
+arm.position.set(0.8,6.9,0);
+const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.35,10,10), new THREE.MeshStandardMaterial({color:0xfff3c4, emissive:0xffe792, emissiveIntensity:0.5}));
+lamp.position.set(1.5,6.75,0);
+lg.add(pole,arm,lamp);
+lg.position.set(x,0,z);
+g.add(lg);
+}
+for(let i=-160;i<=160;i+=40){ streetlight(i,-152); streetlight(i,152); }
+for(let i=-140;i<=140;i+=40){ streetlight(-152,i); streetlight(152,i); }
+
+// Surrounding NYC buildings (simple massing blocks of varied heights)
+// Every building gets a name, a matching color, and an enterable lobby.
+function cityBlock(x,z,w,d,h,colorSeed,name){
+const hue = 0.58 + (colorSeed%5)0.01;
+const color = new THREE.Color().setHSL(hue,0.35,0.5+ (colorSeed%3)0.06);
+const mat = new THREE.MeshStandardMaterial({ color, roughness:0.95, metalness:0 });
+const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
+m.position.set(x,h/2,z); m.castShadow=true; m.receiveShadow=true;
+g.add(m);
+const lbl = makeLabel(name,{fontSize:24});
+lbl.position.set(x,h+4,z);
+g.add(lbl);
+const doorZ = z + d/2 + 3;
+addZone('outdoor', x, doorZ, 7, 'Enter '+name, ()=>enterGeneric(name, color.getHex(), x, doorZ+6));
+}
+let seed=0;
+for(let x=-380;x<=380;x+=60){
+for(let z=-380;z<=380;z+=60){
+// skip the central WTC superblock and street crossings
+if(Math.abs(x)<190 && Math.abs(z)<190) continue;
+if(Math.abs(x)<20 || Math.abs(z)<20) continue;
+const h = 24 + (Math.abs(Math.sin(x0.13+z0.07))*70);
+seed++;
+cityBlock(x,z, 42,42, h, seed, 'Building '+seed);
+}
+}
+
+// Parked / moving period cars (boxy 1980s silhouettes)
+function car(x,z,rotY,color){
+const cg = new THREE.Group();
+const body = new THREE.Mesh(new THREE.BoxGeometry(4.4,1.1,1.9), new THREE.MeshStandardMaterial({color, roughness:0.4, metalness:0.3}));
+body.position.y=0.75; body.castShadow=true;
+const cab = new THREE.Mesh(new THREE.BoxGeometry(2.2,0.8,1.7), new THREE.MeshStandardMaterial({color:0x1c1f22, roughness:0.3}));
+cab.position.set(-0.2,1.55,0);
+cg.add(body,cab);
+[[1.6,0.9],[1.6,-0.9],[-1.6,0.9],[-1.6,-0.9]].forEach(([wx,wz])=>{
+const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.3,10), new THREE.MeshStandardMaterial({color:0x111111}));
+wheel.rotation.x = Math.PI/2; wheel.position.set(wx,0.4,wz);
+cg.add(wheel);
+});
+cg.rotation.y = rotY; cg.position.set(x,0,z);
+g.add(cg);
+}
+const carColors = [0xb03a2e,0xd4ac0d,0x2e4053,0x839192,0x784212,0x145a32];
+for(let i=0;i<14;i++){
+const onEW = i%2===0;
+const x = onEW ? (-150+Math.random()*300) : (Math.random()<0.5?-152:152);
+const z = onEW ? (Math.random()<0.5?-152:152) : (-150+Math.random()*300);
+car(x,z, onEW?0:Math.PI/2, carColors[i%carColors.length]);
+}
+
+// Pedestrians (Roblox-style blocky figures, static period crowd)
+function pedestrian(x,z,torsoColor,rot,legColor,headColor){
+const pg = buildRobloxRig({ torso:torsoColor, leg:legColor, head:headColor, arm:headColor });
+pg.rotation.y = rot||0;
+pg.position.set(x,0,z);
+g.add(pg);
+}
+const shirts = [0xb33f3f,0x3f7db3,0xe0d060,0x6a9c5e,0xc7c7c7,0x8a5ea6];
+const pants  = [0x2c3e50,0x4a4a4a,0x1D8033,0x5a3b1e,0x2c3e50,0x4a4a4a];
+const skins  = [0xE0AC83,0xC68642,0x8D5524,0xF5CD8E,0xE0AC83,0xC68642];
+const pedPositions = [
+[-8,18,0],[6,20,0.4],[16,14,1.2],[-16,14,2.0],[2,-2,0.8],[-6,4,2.4],
+[40,-142,0],[-40,-142,1],[38,142,2],[-38,142,0.5],[-142,40,1.6],[142,-40,0.2]
+];
+pedPositions.forEach((p,i)=>pedestrian(p[0],p[1],shirts[i%shirts.length],p[2],pants[i%pants.length],skins[i%skins.length]));
+
+// Location labels for the map/plaza
+const plazaLbl = makeLabel('WTC Plaza',{fontSize:34});
+plazaLbl.position.set(0,4,-2);
+g.add(plazaLbl);
+
+})();
+
+// ---------------------------------------------------------------------------
+// INTERACTION ZONES (approach + press B). Positions in "outdoor" world space
+// unless otherwise noted; each interior scene also has its own local zones.
+// ---------------------------------------------------------------------------
+const zones = []; // {x,z,radius,scene(where active),label,action}
+
+function addZone(sceneName,x,z,radius,label,action){
+zones.push({ sceneName, x, z, radius, label, action });
+}
+
+// Outdoor entrances
+addZone('outdoor', -34, -78, 9, 'Enter North Tower Lobby', ()=>enterScene('lobbyNorth', -34, -78));
+addZone('outdoor',  34, -78, 9, 'Enter South Tower Lobby', ()=>enterScene('lobbySouth', 34, -78));
+addZone('outdoor',  70, -14, 8, 'Enter the Vista Hotel',   ()=>enterScene('vista', 70, -14));
+addZone('outdoor', -95,  4,  8, 'Enter Shopping Concourse',()=>enterScene('concourse', -95, 4));
+addZone('outdoor',  95,  4,  8, 'Enter PATH / Transportation Hub', ()=>enterScene('path', 95, 4));
+
+// ---------------------------------------------------------------------------
+// INTERIOR BUILDERS
+// ---------------------------------------------------------------------------
+function room(g, w,h,d, floorTex, wallColor, ceilTex){
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(w,d), new THREE.MeshStandardMaterial({map:floorTex, roughness:0.5}));
+floor.rotation.x=-Math.PI/2; floor.receiveShadow=true;
+g.add(floor);
+const ceil = new THREE.Mesh(new THREE.PlaneGeometry(w,d), new THREE.MeshStandardMaterial({map:ceilTex||TX_CEILING, roughness:1}));
+ceil.rotation.x=Math.PI/2; ceil.position.y=h;
+g.add(ceil);
+const wallMat = new THREE.MeshStandardMaterial({color:wallColor, roughness:0.9});
+const back = new THREE.Mesh(new THREE.PlaneGeometry(w,h), wallMat); back.position.set(0,h/2,-d/2); g.add(back);
+const front = new THREE.Mesh(new THREE.PlaneGeometry(w,h), wallMat); front.position.set(0,h/2,d/2); front.rotation.y=Math.PI; g.add(front);
+const left = new THREE.Mesh(new THREE.PlaneGeometry(d,h), wallMat); left.position.set(-w/2,h/2,0); left.rotation.y=Math.PI/2; g.add(left);
+const right = new THREE.Mesh(new THREE.PlaneGeometry(d,h), wallMat); right.position.set(w/2,h/2,0); right.rotation.y=-Math.PI/2; g.add(right);
+}
+
+function exitPad(g,x,z,label,action){
+const ring = new THREE.Mesh(new THREE.RingGeometry(1.6,2,24), new THREE.MeshStandardMaterial({color:0x3ddc84,side:THREE.DoubleSide}));
+ring.rotation.x=-Math.PI/2; ring.position.set(x,0.05,z);
+g.add(ring);
+}
+
+// ---- North Tower Lobby ----
+(function(){
+const g = groups.lobbyNorth;
+room(g, 60,9,40, TX_MARBLE, 0xcfc6b4);
+// elevator bank
+for(let i=-2;i<=2;i++){
+const door = new THREE.Mesh(new THREE.BoxGeometry(3.2,6.4,0.3), new THREE.MeshStandardMaterial({color:0xb08d3a, metalness:0.7, roughness:0.3}));
+door.position.set(i*4.2, 3.2, -19.6);
+g.add(door);
+}
+const info = new THREE.Mesh(new THREE.BoxGeometry(4,1.2,2), new THREE.MeshStandardMaterial({color:0x2c2f33}));
+info.position.set(0,0.6,10); g.add(info);
+g.add(makeLabel('1 WTC — North Tower Lobby',{fontSize:30}).translateY? (()=>{const l=makeLabel('1 WTC — North Tower Lobby',{fontSize:30}); l.position.set(0,7.5,-19); return l;})() : null);
+
+addZone('lobbyNorth', 0,-18, 4.5, 'Take the Elevator', ()=>elevatorInteract('north'));
+addZone('lobbyNorth', 0, 17, 5, 'Exit to Plaza', ()=>enterScene('outdoor', -34,-64));
+exitPad(g,0,17,'Exit');
+})();
+
+// ---- South Tower Lobby ----
+(function(){
+const g = groups.lobbySouth;
+room(g, 60,9,40, TX_MARBLE, 0xc9c1ae);
+for(let i=-2;i<=2;i++){
+const door = new THREE.Mesh(new THREE.BoxGeometry(3.2,6.4,0.3), new THREE.MeshStandardMaterial({color:0xb08d3a, metalness:0.7, roughness:0.3}));
+door.position.set(i*4.2, 3.2, -19.6);
+g.add(door);
+}
+const l = makeLabel('2 WTC — South Tower Lobby',{fontSize:30}); l.position.set(0,7.5,-19); g.add(l);
+
+addZone('lobbySouth', 0,-18, 4.5, 'Take the Elevator', ()=>elevatorInteract('south'));
+addZone('lobbySouth', 0, 17, 5, 'Exit to Plaza', ()=>enterScene('outdoor', 34,-64));
+exitPad(g,0,17,'Exit');
+})();
+
+// ---- Office Floor (typical 1980s open-plan office, high up) ----
+(function(){
+const g = groups.officeFloor;
+room(g, 70,4.2,50, carpetTexture('#8a6b45'), 0xe9e6dc);
+// window band (simulate NYC view through big windows) - use bright sky color panels
+const winMat = new THREE.MeshStandardMaterial({color:0x9fd3f5, emissive:0x274a63, emissiveIntensity:0.25});
+const winN = new THREE.Mesh(new THREE.PlaneGeometry(70,3), winMat); winN.position.set(0,2.1,-24.9); g.add(winN);
+const winS = new THREE.Mesh(new THREE.PlaneGeometry(70,3), winMat); winS.position.set(0,2.1,24.9); winS.rotation.y=Math.PI; g.add(winS);
+// cubicles grid
+for(let x=-24;x<=24;x+=8){
+for(let z=-14;z<=14;z+=8){
+const desk = new THREE.Mesh(new THREE.BoxGeometry(2.6,0.9,1.4), new THREE.MeshStandardMaterial({color:0xd8d2c2}));
+desk.position.set(x,0.45,z); g.add(desk);
+const divider = new THREE.Mesh(new THREE.BoxGeometry(0.1,1.2,1.6), new THREE.MeshStandardMaterial({color:0x9c8f6f}));
+divider.position.set(x-1.3,0.6,z); g.add(divider);
+}
+}
+const l = makeLabel('Office Floor',{fontSize:32}); l.position.set(0,3.6,0); g.add(l);
+addZone('officeFloor', -30,0,4.5,'Take the Elevator', ()=>elevatorCycle());
+const ring = new THREE.Mesh(new THREE.RingGeometry(1.6,2,24), new THREE.MeshStandardMaterial({color:0x3ddc84,side:THREE.DoubleSide}));
+ring.rotation.x=-Math.PI/2; ring.position.set(-30,0.05,0); g.add(ring);
+})();
+
+// ---- Windows on the World (top-floor restaurant, North Tower) ----
+(function(){
+const g = groups.wtow;
+room(g, 70,6,50, carpetTexture('#5c2b2b'), 0x2c1f1f, TX_CEILING);
+const winMat = new THREE.MeshStandardMaterial({color:0xbfe6ff, emissive:0xffe9c2, emissiveIntensity:0.35});
+[[-24.9,0],[24.9,Math.PI],[0,-Math.PI/2,-24.9,true]].forEach(()=>{});
+const winN = new THREE.Mesh(new THREE.PlaneGeometry(70,4), winMat); winN.position.set(0,3,-24.9); g.add(winN);
+const winS = new THREE.Mesh(new THREE.PlaneGeometry(70,4), winMat); winS.position.set(0,3,24.9); winS.rotation.y=Math.PI; g.add(winS);
+const winE = new THREE.Mesh(new THREE.PlaneGeometry(50,4), winMat); winE.position.set(34.9,3,0); winE.rotation.y=-Math.PI/2; g.add(winE);
+const winW = new THREE.Mesh(new THREE.PlaneGeometry(50,4), winMat); winW.position.set(-34.9,3,0); winW.rotation.y=Math.PI/2; g.add(winW);
+for(let x=-20;x<=20;x+=10){
+for(let z=-14;z<=14;z+=10){
+const table = new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.1,0.9,16), new THREE.MeshStandardMaterial({color:0xfff8ec}));
+table.position.set(x,0.45,z); g.add(table);
+const cloth = new THREE.Mesh(new THREE.CylinderGeometry(1.15,1.15,0.05,16), new THREE.MeshStandardMaterial({color:0xffffff}));
+cloth.position.set(x,0.9,z); g.add(cloth);
+}
+}
+const l = makeLabel('Windows on the World',{fontSize:30}); l.position.set(0,5,0); g.add(l);
+addZone('wtow', 30,0,4.5,'Take the Elevator', ()=>elevatorCycle());
+const ring = new THREE.Mesh(new THREE.RingGeometry(1.6,2,24), new THREE.MeshStandardMaterial({color:0x3ddc84,side:THREE.DoubleSide}));
+ring.rotation.x=-Math.PI/2; ring.position.set(30,0.05,0); g.add(ring);
+})();
+
+// ---- Underground Shopping Concourse ----
+(function(){
+const g = groups.concourse;
+room(g, 90,5,26, TX_MARBLE, 0xd9d2c2);
+const shopColors = [0xb54848,0x4878b5,0x48b57e,0xb59548,0x8a5ea6,0x5eb0a6];
+for(let i=0;i<6;i++){
+const front = new THREE.Mesh(new THREE.BoxGeometry(10,3.4,0.4), new THREE.MeshStandardMaterial({color:shopColors[i]}));
+front.position.set(-40+i16, 1.7, -12.6); g.add(front);
+const l = makeLabel('Shop '+(i+1),{fontSize:22}); l.position.set(-40+i16,4,-12.4); g.add(l);
+}
+const l = makeLabel('WTC Shopping Concourse',{fontSize:30}); l.position.set(0,4.4,0); g.add(l);
+addZone('concourse', 0,10,5,'Exit to Plaza', ()=>enterScene('outdoor',-95,18));
+addZone('concourse', 30,10,5,'Enter PATH Station', ()=>enterScene('path', 95, 30));
+exitPad(g,0,10,'Exit');
+})();
+
+// ---- PATH Transportation Hub ----
+(function(){
+const g = groups.path;
+room(g, 60,7,30, TX_MARBLE, 0xc7c2b3);
+const platform = new THREE.Mesh(new THREE.BoxGeometry(56,0.6,8), new THREE.MeshStandardMaterial({color:0x9c9184}));
+platform.position.set(0,0.3,-8); g.add(platform);
+const track = new THREE.Mesh(new THREE.BoxGeometry(56,0.2,4), new THREE.MeshStandardMaterial({color:0x2b2b2b}));
+track.position.set(0,0.1,-2); g.add(track);
+const train = new THREE.Mesh(new THREE.BoxGeometry(30,3,3.4), new THREE.MeshStandardMaterial({color:0x8b1a1a, metalness:0.4, roughness:0.4}));
+train.position.set(-6,1.9,-2); g.add(train);
+for(let i=-13;i<=13;i+=4){
+const win = new THREE.Mesh(new THREE.PlaneGeometry(2.4,1.2), new THREE.MeshStandardMaterial({color:0xbfe0f5}));
+win.position.set(-6+i,2.3,-0.31); g.add(win);
+}
+const l = makeLabel('PATH — Transportation Hub',{fontSize:28}); l.position.set(0,5.6,0); g.add(l);
+addZone('path', 0,10,5,'Exit to Concourse / Plaza', ()=>enterScene('outdoor', 95,18));
+exitPad(g,0,10,'Exit');
+})();
+
+// ---- Vista Hotel ----
+(function(){
+const g = groups.vista;
+room(g, 40,6,30, carpetTexture('#6b2f3a'), 0xe8e2d2);
+const desk = new THREE.Mesh(new THREE.BoxGeometry(10,1.2,2), new THREE.MeshStandardMaterial({color:0x4a2e1d}));
+desk.position.set(0,0.6,-11); g.add(desk);
+const chandelier = new THREE.Mesh(new THREE.SphereGeometry(1.2,10,10), new THREE.MeshStandardMaterial({color:0xffe9b0, emissive:0xffcf7a, emissiveIntensity:0.6}));
+chandelier.position.set(0,5,0); g.add(chandelier);
+const l = makeLabel('Vista Hotel Lobby',{fontSize:30}); l.position.set(0,4.8,-6); g.add(l);
+addZone('vista', 0,10,5,'Exit to Plaza', ()=>enterScene('outdoor', 70,0));
+exitPad(g,0,10,'Exit');
+})();
+
+// ---- Generic Interior (reused for every ordinary building in the city) ----
+let genericWallMat, genericLabel;
+let genericReturnX = 0, genericReturnZ = 0;
+(function(){
+const g = groups.generic;
+const W=34, H=5.5, D=26;
+
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(W,D), new THREE.MeshStandardMaterial({ color:0xcfd2d6, roughness:0.95 }));
+floor.rotation.x = -Math.PI/2; floor.receiveShadow = true;
+g.add(floor);
+
+const ceil = new THREE.Mesh(new THREE.PlaneGeometry(W,D), new THREE.MeshStandardMaterial({ map:TX_CEILING, roughness:1 }));
+ceil.rotation.x = Math.PI/2; ceil.position.y = H;
+g.add(ceil);
+
+genericWallMat = new THREE.MeshStandardMaterial({ color:0x8895a0, roughness:0.95, metalness:0 });
+const back  = new THREE.Mesh(new THREE.PlaneGeometry(W,H), genericWallMat); back.position.set(0,H/2,-D/2); g.add(back);
+const front = new THREE.Mesh(new THREE.PlaneGeometry(W,H), genericWallMat); front.position.set(0,H/2,D/2); front.rotation.y=Math.PI; g.add(front);
+const left  = new THREE.Mesh(new THREE.PlaneGeometry(D,H), genericWallMat); left.position.set(-W/2,H/2,0); left.rotation.y=Math.PI/2; g.add(left);
+const right = new THREE.Mesh(new THREE.PlaneGeometry(D,H), genericWallMat); right.position.set(W/2,H/2,0); right.rotation.y=-Math.PI/2; g.add(right);
+
+// window band
+const winMat = new THREE.MeshStandardMaterial({ color:0xbfe6ff, emissive:0x8fc9ec, emissiveIntensity:0.35 });
+const win = new THREE.Mesh(new THREE.PlaneGeometry(W*0.8,1.6), winMat);
+win.position.set(0,3.5,-D/2+0.02); g.add(win);
+
+// simple blocky reception desk + crates for a lived-in feel
+const desk = new THREE.Mesh(new THREE.BoxGeometry(6,1.1,1.6), new THREE.MeshStandardMaterial({color:0x5a4632, roughness:0.9}));
+desk.position.set(0,0.55,-9); g.add(desk);
+
+const crateColors = [0xb08040,0x8fa0b0,0xb05050];
+const cratePositions = [[10,0,6],[-11,0,4],[9,0,-2],[-9,0,-6]];
+cratePositions.forEach((p,i)=>{
+const crate = new THREE.Mesh(new THREE.BoxGeometry(1.6,1.6,1.6), new THREE.MeshStandardMaterial({color:crateColors[i%crateColors.length], roughness:0.95}));
+crate.position.set(p[0],0.8,p[2]); crate.castShadow=true;
+g.add(crate);
+});
+
+genericLabel = makeDynamicLabel('Building', { fontSize:32 });
+genericLabel.position.set(0,4.6,-8);
+g.add(genericLabel);
+
+addZone('generic', 0,-9, 5.5, 'Exit to Street', ()=>enterScene('outdoor', genericReturnX, genericReturnZ));
+exitPad(g,0,-9,'Exit');
+})();
+
+let genericAreaName = 'Lobby';
+function enterGeneric(name, colorHex, returnX, returnZ){
+genericReturnX = returnX; genericReturnZ = returnZ;
+genericAreaName = name;
+genericLabel.userData.setText(name);
+genericWallMat.color.setHex(colorHex);
+enterScene('generic', 0, -9);
+}
+
+// ---------------------------------------------------------------------------
+// ELEVATOR / FLOOR STATE MACHINE
+// ---------------------------------------------------------------------------
+let elevatorFloorSeq = ['lobby','office','wtow'];
+let elevatorIndex = 0;
+let activeTower = 'north';
+
+function elevatorInteract(tower){
+activeTower = tower;
+elevatorIndex = 1; // go up to office floor from lobby
+rideElevator('officeFloor', tower==='north'?-30:-30, 0);
+}
+function elevatorCycle(){
+elevatorIndex = (elevatorIndex+1) % elevatorFloorSeq.length;
+const target = elevatorFloorSeq[elevatorIndex];
+if(target==='lobby'){ rideElevator(activeTower==='north'?'lobbyNorth':'lobbySouth', 0,-18); }
+else if(target==='office'){ rideElevator('officeFloor', -30,0); }
+else if(target==='wtow'){ rideElevator('wtow', 30,0); }
+}
+function rideElevator(sceneName,x,z){
+fadeTransition(()=>enterScene(sceneName,x,z));
+}
+
+// ---------------------------------------------------------------------------
+// SCENE / PLAYER STATE
+// ---------------------------------------------------------------------------
+let currentScene = 'outdoor';
+const player = {
+x:0, y:0, z:70, vy:0, onGround:true, height:1.7
+};
+let camYaw = Math.PI; // facing back toward towers initially
+let camPitch = 0.28;
+const camDistance = 8.5;
+
+const player3d = buildRobloxRig({ head:0xF5CD8E, torso:0x2A62B5, arm:0xF5CD8E, leg:0x1D8033 });
+scene.add(player3d);
+let walkPhase = 0;
+
+const clampsByScene = {
+outdoor:      {minX:-350,maxX:350,minZ:-350,maxZ:350, groundY:0},
+lobbyNorth:   {minX:-28,maxX:28,minZ:-18,maxZ:18, groundY:0},
+lobbySouth:   {minX:-28,maxX:28,minZ:-18,maxZ:18, groundY:0},
+officeFloor:  {minX:-33,maxX:33,minZ:-23,maxZ:23, groundY:0},
+wtow:         {minX:-33,maxX:33,minZ:-23,maxZ:23, groundY:0},
+concourse:    {minX:-43,maxX:43,minZ:-11,maxZ:11, groundY:0},
+path:         {minX:-28,maxX:28,minZ:-12,maxZ:12, groundY:0},
+vista:        {minX:-18,maxX:18,minZ:-13,maxZ:13, groundY:0},
+generic:      {minX:-16,maxX:16,minZ:-12,maxZ:12, groundY:0},
+};
+
+function fadeTransition(cb){
+const fade = document.getElementById('fade');
+fade.classList.add('on');
+setTimeout(()=>{ cb(); setTimeout(()=>fade.classList.remove('on'),80); }, 260);
+}
+
+function enterScene(name,x,z){
+const doIt = ()=>{
+Object.keys(groups).forEach(k=>groups[k].visible = (k===name));
+currentScene = name;
+player.x = x; player.z = z; player.y = 0; player.vy = 0;
+
+const outdoorMode = (name==='outdoor');        
+scene.background = outdoorMode ? new THREE.Color(0x8fcdf2) : new THREE.Color(0x14171c);        
+scene.fog.color = scene.background;        
+scene.fog.near = outdoorMode ? 220 : 60;        
+scene.fog.far  = outdoorMode ? 900 : 160;        
+hemi.visible = outdoorMode;        
+sun.visible = outdoorMode;        
+indoorAmbient.visible = !outdoorMode;        
+indoorLamp.visible = !outdoorMode;        
+if(!outdoorMode){ indoorLamp.position.set(x,4,z); }        
+    
+document.getElementById('area-pill').textContent = areaTitle(name);
+
+};
+if(name===currentScene){ doIt(); } else { fadeTransition(doIt); }
+}
+
+function areaTitle(name){
+return ({
+outdoor:'WTC Plaza',
+lobbyNorth:'North Tower Lobby',
+lobbySouth:'South Tower Lobby',
+officeFloor:'Office Floor, 1 WTC',
+wtow:'Windows on the World',
+concourse:'Shopping Concourse',
+path:'PATH Station',
+vista:'Vista Hotel',
+generic: genericAreaName
+})[name] || name;
+}
+
+// Flatten every material in the scene into matte, low-gloss "plastic" —
+// the material look Roblox parts use — for a consistent sandbox aesthetic.
+(function robloxifyMaterials(){
+scene.traverse(obj=>{
+if(!obj.isMesh || !obj.material) return;
+const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+mats.forEach(m=>{
+if(m.metalness !== undefined) m.metalness = Math.min(m.metalness, 0.05);
+if(m.roughness !== undefined) m.roughness = Math.max(m.roughness, 0.9);
+if('flatShading' in m){ m.flatShading = true; m.needsUpdate = true; }
+});
+});
+})();
+
+enterScene('outdoor', 0, 70);
+
+// ---------------------------------------------------------------------------
+// GAMEPAD INPUT
+// ---------------------------------------------------------------------------
+const DEADZONE = 0.16;
+function dz(v){ return Math.abs(v)<DEADZONE ? 0 : v; }
+
+let gpIndex = null;
+let bWasDown = false, aWasDown = false;
+const bannerEl = document.getElementById('banner-text');
+const bannerBox = document.getElementById('controller-banner');
+
+window.addEventListener('gamepadconnected', (e)=>{ gpIndex = e.gamepad.index; });
+window.addEventListener('gamepaddisconnected', ()=>{ gpIndex = null; });
+
+function pollGamepad(){
+const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+let gp = null;
+for(let i=0;i<pads.length;i++){ if(pads[i]){ gp = pads[i]; gpIndex=i; break; } }
+
+if(!gp){
+bannerBox.className = 'hud warn';
+bannerEl.textContent = 'No controller detected — using on-screen touch controls (press a Backbone button to switch over)';
+return null;
+}
+bannerBox.className = 'hud connected';
+bannerEl.textContent = 'Controller connected • Left Stick Move • Right Stick Look • A Jump • B Interact';
+return gp;
+}
+
+// ---------------------------------------------------------------------------
+// TOUCH FALLBACK CONTROLS (dual virtual joysticks + A/B buttons)
+// Runs at all times; if a real gamepad is sending input, the values simply
+// add together, so picking up the Backbone mid-game "just works" too.
+// ---------------------------------------------------------------------------
+const touchState = { moveX:0, moveZ:0, lookX:0, lookY:0, aDown:false, bDown:false };
+const clamp1 = v => Math.max(-1, Math.min(1, v));
+
+(function setupTouchControls(){
+const zoneLeft = document.getElementById('touch-zone-left');
+const zoneRight = document.getElementById('touch-zone-right');
+const joyLeft = document.getElementById('joy-left');
+const joyRight = document.getElementById('joy-right');
+const knobLeft = joyLeft.querySelector('.joy-knob');
+const knobRight = joyRight.querySelector('.joy-knob');
+const btnJump = document.getElementById('btn-jump');
+const btnInteract = document.getElementById('btn-interact');
+const JOY_RADIUS = 55;
+
+let leftId = null, rightId = null;
+let leftStart = {x:0,y:0}, rightStart = {x:0,y:0};
+
+function showJoy(base,x,y){ base.style.left=(x-60)+'px'; base.style.top=(y-60)+'px'; base.classList.add('active'); }
+function hideJoy(base,knob){ base.classList.remove('active'); knob.style.transform='translate(-50%,-50%)'; }
+function dragJoy(knob,dx,dy){
+const dist = Math.min(JOY_RADIUS, Math.hypot(dx,dy));
+const ang = Math.atan2(dy,dx);
+const kx = Math.cos(ang)*dist, ky = Math.sin(ang)*dist;
+knob.style.transform = translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px));
+return { x: kx/JOY_RADIUS, y: ky/JOY_RADIUS };
+}
+
+zoneLeft.addEventListener('touchstart', e=>{
+for(const t of e.changedTouches){
+if(leftId===null){ leftId=t.identifier; leftStart={x:t.clientX,y:t.clientY}; showJoy(joyLeft,t.clientX,t.clientY); }
+}
+}, {passive:true});
+zoneLeft.addEventListener('touchmove', e=>{
+for(const t of e.changedTouches){
+if(t.identifier===leftId){
+const v = dragJoy(knobLeft, t.clientX-leftStart.x, t.clientY-leftStart.y);
+touchState.moveX = v.x; touchState.moveZ = v.y;
+}
+}
+e.preventDefault();
+}, {passive:false});
+function endLeft(e){
+for(const t of e.changedTouches){
+if(t.identifier===leftId){ leftId=null; hideJoy(joyLeft,knobLeft); touchState.moveX=0; touchState.moveZ=0; }
+}
+}
+zoneLeft.addEventListener('touchend', endLeft);
+zoneLeft.addEventListener('touchcancel', endLeft);
+
+zoneRight.addEventListener('touchstart', e=>{
+for(const t of e.changedTouches){
+if(rightId===null){ rightId=t.identifier; rightStart={x:t.clientX,y:t.clientY}; showJoy(joyRight,t.clientX,t.clientY); }
+}
+}, {passive:true});
+zoneRight.addEventListener('touchmove', e=>{
+for(const t of e.changedTouches){
+if(t.identifier===rightId){
+const v = dragJoy(knobRight, t.clientX-rightStart.x, t.clientY-rightStart.y);
+touchState.lookX = v.x; touchState.lookY = v.y;
+}
+}
+e.preventDefault();
+}, {passive:false});
+function endRight(e){
+for(const t of e.changedTouches){
+if(t.identifier===rightId){ rightId=null; hideJoy(joyRight,knobRight); touchState.lookX=0; touchState.lookY=0; }
+}
+}
+zoneRight.addEventListener('touchend', endRight);
+zoneRight.addEventListener('touchcancel', endRight);
+
+function bindButton(el, onDown, onUp){
+el.addEventListener('touchstart', e=>{ onDown(); e.preventDefault(); e.stopPropagation(); }, {passive:false});
+el.addEventListener('touchend', e=>{ onUp(); e.preventDefault(); e.stopPropagation(); }, {passive:false});
+el.addEventListener('touchcancel', e=>{ onUp(); e.preventDefault(); e.stopPropagation(); }, {passive:false});
+}
+bindButton(btnJump, ()=>touchState.aDown=true, ()=>touchState.aDown=false);
+bindButton(btnInteract, ()=>touchState.bDown=true, ()=>touchState.bDown=false);
+})();
+
+// ---------------------------------------------------------------------------
+// MAIN LOOP
+// ---------------------------------------------------------------------------
+let lastTime = performance.now();
+const MOVE_SPEED = 9.5;
+const LOOK_SPEED = 2.6;
+const TURN_SPEED = 2.2;
+const GRAVITY = -24;
+const JUMP_V = 7.2;
+
+function nearestZoneFor(sceneName,x,z){
+let best=null, bestD=Infinity;
+for(const zn of zones){
+if(zn.sceneName!==sceneName) continue;
+const d = Math.hypot(zn.x-x, zn.z-z);
+if(d<zn.radius && d<bestD){ best=zn; bestD=d; }
+}
+return best;
+}
+
+const promptEl = document.getElementById('interact-prompt');
+const promptText = document.getElementById('interact-text');
+
+function update(dt){
+const gp = pollGamepad();
+
+let moveX=0, moveZ=0, lookX=0, lookY=0, aDown=false, bDown=false;
+if(gp){
+moveX = dz(gp.axes[0]||0);
+moveZ = dz(gp.axes[1]||0);
+lookX = dz(gp.axes[2]||0);
+lookY = dz(gp.axes[3]||0);
+aDown = !!(gp.buttons[0] && gp.buttons[0].pressed);
+bDown = !!(gp.buttons[1] && gp.buttons[1].pressed);
+}
+// touch joysticks/buttons work as a live backup — combine with gamepad input
+moveX = clamp1(moveX + touchState.moveX);
+moveZ = clamp1(moveZ + touchState.moveZ);
+lookX = clamp1(lookX + touchState.lookX);
+lookY = clamp1(lookY + touchState.lookY);
+aDown = aDown || touchState.aDown;
+bDown = bDown || touchState.bDown;
+
+// camera look — right stick still tilts the camera up/down
+camPitch += lookY * LOOK_SPEED * 0.6 * dt;
+camPitch = Math.max(-0.15, Math.min(0.75, camPitch));
+// right stick horizontal also free-looks the camera
+camYaw -= lookX * LOOK_SPEED * dt;
+
+// left stick horizontal TURNS the camera (and character) left/right
+camYaw -= moveX * TURN_SPEED * dt;
+
+// character always faces the camera's yaw direction
+player3d.rotation.y = camYaw;
+
+// left stick vertical moves forward/back along the camera's facing direction
+const isMoving = Math.abs(moveZ) > 0.02;
+if(isMoving){
+const forward = { x:Math.sin(camYaw), z:Math.cos(camYaw) };
+player.x += forward.x * -moveZ * MOVE_SPEED * dt;
+player.z += forward.z * -moveZ * MOVE_SPEED * dt;
+}
+
+// simple Roblox-style walk cycle for arms/legs
+walkPhase += dt * (isMoving ? 8 : 0);
+const limbs = player3d.userData.limbs;
+if(limbs){
+const swing = isMoving ? Math.sin(walkPhase) * 0.55 : 0;
+limbs.leftLegPivot.rotation.x = swing;
+limbs.rightLegPivot.rotation.x = -swing;
+limbs.leftArmPivot.rotation.x = -swing;
+limbs.rightArmPivot.rotation.x = swing;
+}
+
+// clamp to current scene bounds
+const cl = clampsByScene[currentScene];
+player.x = Math.max(cl.minX, Math.min(cl.maxX, player.x));
+player.z = Math.max(cl.minZ, Math.min(cl.maxZ, player.z));
+
+// jump / gravity
+if(aDown && !aWasDown && player.onGround){ player.vy = JUMP_V; player.onGround=false; }
+aWasDown = aDown;
+player.vy += GRAVITYdt;
+player.y += player.vydt;
+if(player.y<=cl.groundY){ player.y=cl.groundY; player.vy=0; player.onGround=true; }
+
+player3d.position.set(player.x, player.y, player.z);
+
+// camera third-person orbit
+const camX = player.x - Math.sin(camYaw)camDistanceMath.cos(camPitch);
+const camZ = player.z - Math.cos(camYaw)camDistanceMath.cos(camPitch);
+const camY = player.y + 3.6 + camDistance*Math.sin(camPitch);
+camera.position.set(camX,camY,camZ);
+camera.lookAt(player.x, player.y+1.5, player.z);
+
+// interact zone / prompt
+const zn = nearestZoneFor(currentScene, player.x, player.z);
+if(zn){
+promptText.textContent = zn.label;
+promptEl.classList.add('show');
+if(bDown && !bWasDown){ zn.action(); }
+} else {
+promptEl.classList.remove('show');
+}
+bWasDown = bDown;
+
+// simple fountain animation
+const water = groups.outdoor.getObjectByName('fountainWater');
+const jet = groups.outdoor.getObjectByName('fountainJet');
+const t = performance.now()0.002;
+if(water) water.position.y = 1.5 + Math.sin(t3)0.03;
+if(jet) jet.scale.y = 1 + Math.sin(t4)*0.15;
+
+sun.target.position.set(player.x, 0, player.z);
+}
+
+function animate(now){
+const dt = Math.min(0.05,(now-lastTime)/1000);
+lastTime = now;
+update(dt);
+renderer.render(scene,camera);
+requestAnimationFrame(animate);
+}
+
+// ---------------------------------------------------------------------------
+// BOOT
+// ---------------------------------------------------------------------------
+document.getElementById('startBtn').addEventListener('click', ()=>{
+document.getElementById('boot').style.display = 'none';
+requestAnimationFrame(animate);
+});
+
+})();
+</script>  </body>
+
+</html>  
