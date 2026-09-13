@@ -1235,10 +1235,27 @@ requestAnimationFrame(animate);
 // ---------------------------------------------------------------------------
 // BOOT
 // ---------------------------------------------------------------------------
-document.getElementById('startBtn').addEventListener('click', ()=>{
-document.getElementById('boot').style.display = 'none';
-requestAnimationFrame(animate);
-});
+function startGame(){
+  document.getElementById('boot').style.display = 'none';
+  requestAnimationFrame(animate);
+}
+
+document.getElementById('startBtn').addEventListener('click', startGame);
+
+function waitForA(){
+  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+
+  for(const gp of pads){
+    if(gp && gp.buttons[0] && gp.buttons[0].pressed){
+      startGame();
+      return;
+    }
+  }
+
+  requestAnimationFrame(waitForA);
+}
+
+waitForA();
 
 })();
 </script>  </body>
